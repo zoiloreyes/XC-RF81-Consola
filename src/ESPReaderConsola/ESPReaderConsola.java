@@ -66,9 +66,8 @@ public class ESPReaderConsola implements FoundTagListener, IAntennaListener {
 			
 			return;
 		}
-		String mensaje = isNullOrWhiteSpace(ev.getTagId()) ? ev.getEpc() : ev.getTagId();
-		System.out.println(ev.getAntenna() + "_" + mensaje);
-	
+		String mensaje = ev.getAntenna() + "_" +( isNullOrWhiteSpace(ev.getTagId()) ? ev.getEpc() : ev.getTagId());
+		System.out.println(mensaje);	
 		String rutaPrograma = argumentos[1];
         String h = argumentos[2];
         String t = argumentos[3];
