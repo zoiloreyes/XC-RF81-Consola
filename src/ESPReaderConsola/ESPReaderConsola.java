@@ -13,7 +13,7 @@ import invengo.javaapi.core.*;
 import invengo.javaapi.protocol.IRP1.*;
 import invengo.javaapi.protocol.IRP1.Reader;
 
-public class ESPReaderConsola implements FoundTagListener, IAntennaListener {
+public class ESPReaderConsola implements IFoundTagListener {
 
 	private ReadTag mensajeEscaaneo = new ReadTag(ReadTag.ReadMemoryBank.EPC_TID_UserData_6C_2);
 	public String[] argumentos;
@@ -93,36 +93,5 @@ public class ESPReaderConsola implements FoundTagListener, IAntennaListener {
 	public static boolean isNullOrWhiteSpace(String cadena) {
 		return cadena == null || cadena.isEmpty() || cadena.trim().length() == 0; 
 	}
-
-	@Override
-	public void MessageSent() {
-		if(argumentos.length < 5) {
-			System.out.println("parametros insuficientes");
-			return;
-		}
-		String mensaje = "Mensaje de antena recibido";
-		String rutaPrograma = argumentos[1];
-        String h = argumentos[2];
-        String t = argumentos[4];
-        
-        ArrayList<String> comandoList = new ArrayList<String>();
-        
-        comandoList.add(rutaPrograma);
-        comandoList.add("-m");
-        comandoList.add(mensaje);
-        comandoList.add("-h");
-        comandoList.add(h);
-        comandoList.add("-t");
-        comandoList.add(t);
-        
-        String [] comandosArray = comandoList.toArray(new String[comandoList.size()]);
-        try {
-        	Runtime.getRuntime().exec(comandosArray);
-        }catch(Exception e) {
-        	
-        }
-	}
-
-
 
 }
