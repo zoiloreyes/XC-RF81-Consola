@@ -5,10 +5,15 @@ import invengo.javaapi.protocol.IRP1.Reader;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import invengo.javaapi.protocol.IRP1.ReadTag;
 
 public class Lector implements invengo.javaapi.handle.IMessageNotificationReceivedHandle, invengo.javaapi.handle.IApiExceptionHandle  {
-
+	private Timer checkConnTimer = new Timer();
+	private TimerTask timerCheckConn;
+	
 	private String nombreLector;
 	private String ip;
 	private String puerto;
@@ -29,6 +34,7 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 
 	public boolean conectar() {
 		boolean intentandoConectar = true;
+		this.mensajeEscaneo.setAntenna((byte)0x80);
 	
 		try {
 			System.out.println("Intentando conectar");
@@ -38,11 +44,20 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 			}
 			
 			System.out.println("Lector conectado!");
+			//ReadTag mensajeTemp = new ReadTag(ReadTag.ReadMemoryBank.EPC_6C);
+			//lector.send(mensajeTemp);
+			//lector.send(new invengo.javaapi.protocol.IRP1.ResetReader_800());
+			lector.send(new invengo.javaapi.protocol.IRP1.ReadTag(ReadTag.ReadMemoryBank.TID_6C));
+			lector.send(new invengo.javaapi.protocol.IRP1.ReadTag(ReadTag.ReadMemoryBank.ID_6B));
+			
+			//lector.send(new invengo.javaapi.protocol.IRP1.PowerOn((byte) (0x80 + 0x01)));
+			//lector.send(new invengo.javaapi.protocol.IRP1.PowerOff());
 			lector.send(this.mensajeEscaneo);
 			lector.onMessageNotificationReceived.add(this);
 			lector.onApiException.add(this);
 			System.out.println("Iniciando Lectura");
 			this.isConnected = true;
+			CheckConnTask();
 		}catch(InterruptedException e)
 		{
 			
@@ -51,6 +66,42 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 		return false;
 	}
 	
+	public void desconectar() {
+		if (lector != null && lector.isConnected()) {
+			lector.onMessageNotificationReceived.remove(this);
+			lector.disConnect();
+			this.checkConnTimer.cancel();
+		}
+	}
+	
+	public void CheckConnTask() {
+
+		timerCheckConn = new TimerTask() {
+
+			@Override
+			public void run() {
+				while (lector.isConnected()) {
+
+					//Sustituir por nueva ubicacion
+					if (!Utildades.pingTest(ip + ":" + puerto)) {
+						lector.setCommConnect(false);
+						desconectar();
+						System.out.println("Lector desconectado");
+						conectar();
+						checkConnTimer.cancel();
+					}
+
+					try {
+						Thread.sleep(15000);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+		};
+
+		checkConnTimer.schedule(timerCheckConn, 2000);
+
+	}
 	
 	public void addListener(FoundTagListener toAdd) {
 		TagFoundListeners.add(toAdd);
@@ -91,6 +142,7 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 			listener.MessageSent();
 		}
 		String tipoMensaje = msg.getMessageType();
+		
 		tipoMensaje = tipoMensaje.substring(tipoMensaje.lastIndexOf('.') + 1);
 		switch(tipoMensaje){
 			case "RXD_TagData":
