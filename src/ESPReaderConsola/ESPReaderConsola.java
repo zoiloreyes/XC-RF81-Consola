@@ -84,7 +84,6 @@ public class ESPReaderConsola implements FoundTagListener, IAntennaListener {
         
         String [] comandosArray = comandoList.toArray(new String[comandoList.size()]);
         try {
-        	//System.out.println(String.join(" ",comandosArray));
         	Runtime.getRuntime().exec(comandosArray);
         }catch(Exception e) {
         	
