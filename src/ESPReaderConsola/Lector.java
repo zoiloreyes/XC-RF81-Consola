@@ -22,7 +22,8 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 	private ReadTag mensajeEscaneo = new ReadTag(ReadTag.ReadMemoryBank.EPC_TID_UserData_6C_ID_UserData_6B);	
 	private List<FoundTagListener> TagFoundListeners = new ArrayList<FoundTagListener>();
 	private List<IAntennaListener> AntennaListeners = new ArrayList<IAntennaListener>();
-	private boolean es6C = false; 
+	private boolean es6C = false;
+	private byte antennaActual = 1;
 	public Lector(String nombreLector, String ip, String puerto) {
 		this.nombreLector = nombreLector;
 		this.ip = ip;
@@ -42,7 +43,7 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 				System.out.println("Conexión fallida, intentando de nuevo..");
 			}
 			int delay = 0;   // delay for 5 sec.
-			  int interval = 500;  // iterate every sec.
+			  int interval = 300;  // iterate every sec.
 			  timerCambioTag = new Timer();
 			  timerCambioTag.scheduleAtFixedRate(new TimerTask() {
 			          public void run() {
@@ -53,14 +54,21 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 			  				}
 			  				
 			  				lector.send(new invengo.javaapi.protocol.IRP1.PowerOff());
-				  			lector.send(new invengo.javaapi.protocol.IRP1.PowerOn((byte) 143));
-				  			if(es6C) {
-				  				lector.send(new ReadTag(ReadTag.ReadMemoryBank.ID_6B));
-				  				es6C = false;
-				  			}else {
-				  				lector.send(new ReadTag(ReadTag.ReadMemoryBank.EPC_6C));
-				  				es6C = true;
+				  			lector.send(new invengo.javaapi.protocol.IRP1.PowerOn((byte) antennaActual));
+				  			if(es6C) {				  				
+				  				es6C = false;					  			
+				  				LeerPorAntenna(ReadTag.ReadMemoryBank.ID_6B, antennaActual);				  				
 				  			}
+				  			else {				  				
+				  				es6C = true;				  				
+				  				LeerPorAntenna(ReadTag.ReadMemoryBank.EPC_6C, antennaActual);
+				  				antennaActual++;
+				  			}
+				  			
+			  				if(antennaActual > 4) {
+			  					antennaActual = 1;
+			  				}
+
 			  			}catch(Exception e) {
 			  				
 			  			}
@@ -85,6 +93,11 @@ public class Lector implements invengo.javaapi.handle.IMessageNotificationReceiv
 		return false;
 	}
 	
+	private void LeerPorAntenna(ReadTag.ReadMemoryBank memBank, byte antena) {
+		ReadTag msg = new ReadTag(memBank);
+		msg.setAntenna(antena);
+		lector.send(msg);
+	}
 	
 	public void CheckConnTask() {
 
